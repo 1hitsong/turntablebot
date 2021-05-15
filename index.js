@@ -1,6 +1,9 @@
-var Bot = require('ttapi');
-var Storage = require('node-storage');
+const Bot = require('ttapi');
+const Storage = require('node-storage');
 const request = require('request');
+
+const PrivateMessage = require('./src/privatemessage.js');
+const Chat = require('./src/chat.js');
 
 require('dotenv').config();
 
@@ -10,7 +13,7 @@ const ROOMID = process.env.BOT_ROOMID;
 
 const bot = new Bot(AUTH, USERID);
 
-var store = new Storage('data');
+const store = new Storage('data');
 
 let roomName = '';
 
@@ -26,92 +29,13 @@ bot.on('disconnected', async (data) => {
 });
 
 bot.on('pmmed', async (data) => {
-    if (data.text.match(/^\/commands/)) {
-        bot.pm(`
-        [ /ban * ]
-        [ /lyrics artist - song title ]
-        [ /what genre is * ]
-        [ /wiki * ]
-        [ /yt * ]
-        `, data.senderid);
-    }
-
-    if (data.text.match(/^\/bop/)) {
-        bot.bop();
-    }
+    PrivateMessage.pmReceived(bot, data);
 });
 
 // Actions when a user posts in chat
 bot.on('speak', async (data) => {
 
-    // Bite Me
-    if (data.text.match(/^\/biteme/)) {
-        bot.speak(`Screw You ${data.name}!`);
-    }
-
-    // Lyrics Search
-    if (data.text.match(/^\/lyrics (.+)/)) {
-        let searchCriteria = data.text.match(/^\/lyrics (.+)/)[1];
-        let songData = searchCriteria.split(` - `);
-        let URL = `https://api.lyrics.ovh/v1/${songData[0]}/${songData[1]}`
-        
-        request(URL, {json: true}, (error, res, body) => {
-            if (!body.hasOwnProperty(`lyrics`)) {
-                bot.pm(`I couldn't find lyrics for ${searchCriteria}.`, data.userid);
-                return;
-            }
-
-            bot.pm(body.lyrics, data.userid);
-        });
-    }
-
-    // Genrenator
-    // Generate new genres
-    if (data.text.match(/^\/what genre is (.+)/)) {
-        let searchCriteria = data.text.match(/^\/what genre is (.+)/)[1];
-        let URL = `https://binaryjazz.us/wp-json/genrenator/v1/genre/`
-        
-        request(URL, {json: true}, (error, res, body) => {
-            bot.speak(`${searchCriteria} is ${body}.`);
-        });
-    }
-
-    // YouTube Search
-    if (data.text.match(/^\/yt (.+)/)) {
-        let searchCriteria = encodeURIComponent(data.text.match(/^\/yt (.+)/)[1]);
-
-        if (containsBannedWords(data.text.match(/^\/yt (.+)/)[1])) {
-            bot.speak(`Grow up.`);
-            return;
-        }
-
-        let youtubeURL = `https://www.googleapis.com/youtube/v3/search?q=${searchCriteria}&key=${process.env.YOUTUBE_API_KEY}`
-        
-        request(youtubeURL, {json: true}, (error, res, body) => {
-            let videoId = body.items[0].id.videoId;
-            bot.speak(`https://www.youtube.com/watch?v=${videoId}`);
-        });
-    }
-
-    // Wiki Search
-    if (data.text.match(/^\/wiki (.+)/)) {
-        if (containsBannedWords(data.text.match(/^\/wiki (.+)/)[1])) {
-            bot.speak(`Grow up.`);
-            return;
-        }
-
-        let searchCriteria = encodeURIComponent(data.text.match(/^\/wiki (.+)/)[1]);
-        let wikiURL = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${searchCriteria}&format=json`
-        
-        request(wikiURL, {json: true}, (error, res, body) => {
-            if (!body.query.search[0]) {
-                return;
-            }
-
-            let PageID = encodeURIComponent(body.query.search[0].title);
-            bot.speak(`http://en.wikipedia.org/wiki/${PageID}`);
-        });
-    }
+    Chat.onNew(bot, data);
 
     let isMod = await isModerator(data.userid);    
 
