@@ -1,0 +1,26 @@
+{
+  "name": "turntablebot",
+  "version": "1.0.0",
+  "description": "turntablebot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1hitsong/turntablebot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/1hitsong/turntablebot/issues"
+  },
+  "homepage": "https://github.com/1hitsong/turntablebot#readme",
+  "dependencies": {
+    "dotenv": "^9.0.2",
+    "node-storage": "0.0.9",
+    "request": "^2.88.2",
+    "ttapi": "^4.0.3"
+  }
+}
