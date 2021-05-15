@@ -14,7 +14,6 @@ module.exports.onNew = async (bot, data) => {
         pmUserLyrics(bot, data);
     }
 
-    // Genrenator
     // Generate new genres
     if (data.text.match(/^\/what genre is (.+)/)) {
         postNewGenre(bot, data);

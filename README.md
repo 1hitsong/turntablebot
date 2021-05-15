@@ -1,8 +1,9 @@
-turntablebot
+turntablebot - A barebones turntable.fm bot.
+
+Because honestly, why does a tt.fm bot need to roll a dice?
+
+
 
 **Ideas**
 
 Remind Me
-
-Bands In Town
-https://app.swaggerhub.com/apis/Bandsintown/PublicAPI/3.0.0

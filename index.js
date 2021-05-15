@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const PrivateMessage = require('./src/privatemessage.js');
 const Chat = require('./src/chat.js');
+const Room = require('./src/room.js');
+const User = require('./src/user.js');
 
 const AUTH = process.env.BOT_AUTH;
 const USERID = process.env.BOT_USERID;
@@ -19,7 +21,7 @@ let roomName = '';
 bot.roomRegister(ROOMID, async () => {
     bot.setAsBot();
 
-    const roomInfo = await getRoomInfo();
+    const roomInfo = await Room.getInfo(bot);
     roomName = roomInfo.room.name;
 });
 
@@ -36,7 +38,7 @@ bot.on('speak', async (data) => {
 
     Chat.onNew(bot, data);
 
-    let isMod = await isModerator(data.userid);    
+    let isMod = await User.isMod(bot, data.userid);
 
     // Someone is calling for a ban
     if (data.text.match(/^\/ban (.+)/)) {
@@ -102,21 +104,5 @@ bot.on('registered', (registereddata) => {
         // bot.speak(`${registereddata.user[0].name}, Welcome to ${roomName}.`);
     });
 });
-
-// Check if user is moderator of current room
-const isModerator = async (userId) => {
-    const roomInfo = await getRoomInfo();
-    let moderatorList = roomInfo.room.metadata.moderator_id;
-    return moderatorList.includes(userId);
-}
-
-// Async RoomInfo Fuction
-const getRoomInfo = () => {
-    return new Promise(resolve => {
-        bot.roomInfo( (data) => {
-            resolve(data);
-        });
-    });
-}
 
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
