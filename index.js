@@ -1,19 +1,18 @@
-const Bot = require('ttapi');
+const ttapi = require('ttapi');
 const Storage = require('node-storage');
 const request = require('request');
+const store = new Storage('data');
+
+require('dotenv').config();
 
 const PrivateMessage = require('./src/privatemessage.js');
 const Chat = require('./src/chat.js');
-
-require('dotenv').config();
 
 const AUTH = process.env.BOT_AUTH;
 const USERID = process.env.BOT_USERID;
 const ROOMID = process.env.BOT_ROOMID;
 
-const bot = new Bot(AUTH, USERID);
-
-const store = new Storage('data');
+const bot = new ttapi(AUTH, USERID);
 
 let roomName = '';
 
@@ -119,13 +118,5 @@ const getRoomInfo = () => {
         });
     });
 }
-
-const containsBannedWords = (search) => {
-    let bannedWords = [`porn`, `pornography`, `porno`, `p0rn`, `pron`, `p0rno`, `p0rn0`];
-
-    const searchWords = search.toLowerCase().split(` `);
-    return !searchWords.every(word => !bannedWords.includes(word));
-}
-  
 
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
