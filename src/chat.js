@@ -2,7 +2,7 @@ const request = require('request');
 const PrivateMessage = require('./privatemessage');
 const ContentFilters = require('./contentfilters');
 
-module.exports.onNew = async (bot, data) => {
+module.exports.onNewMessage = async (bot, data) => {
 
     // Bite Me
     if (data.text.match(/^\/biteme/)) {

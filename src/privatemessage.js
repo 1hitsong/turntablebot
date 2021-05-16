@@ -1,6 +1,6 @@
 const Vote = require('./vote');
 
-module.exports.pmReceived = async (bot, data) => {
+module.exports.onNewPM = async (bot, data) => {
 
     if (data.text.match(/^\/commands/)) {
         this.send(bot,

@@ -8,7 +8,9 @@ require('dotenv').config();
 const PrivateMessage = require('./src/privatemessage.js');
 const Chat = require('./src/chat.js');
 const Room = require('./src/room.js');
+const Song = require('./src/song.js');
 const User = require('./src/user.js');
+const Vote = require('./src/vote.js');
 
 const AUTH = process.env.BOT_AUTH;
 const USERID = process.env.BOT_USERID;
@@ -30,13 +32,13 @@ bot.on('disconnected', async (data) => {
 });
 
 bot.on('pmmed', async (data) => {
-    PrivateMessage.pmReceived(bot, data);
+    PrivateMessage.onNewPM(bot, data);
 });
 
 // Actions when a user posts in chat
 bot.on('speak', async (data) => {
 
-    Chat.onNew(bot, data);
+    Chat.onNewMessage(bot, data);
 
     let isMod = await User.isMod(bot, data.userid);
 
@@ -71,24 +73,23 @@ bot.on('speak', async (data) => {
 
 // Actions when a new song plays
 bot.on('newsong', (data) => {
-    // Up vote every song
-    sleep(1000).then(() => {
-        bot.bop();
-    });
+    Song.onNewSong(bot, data);
 });
 
 // Actions when new users enter room
 bot.on('registered', (registereddata) => {
 
-    // Ignore yourself
-    if (registereddata.user[0].name === 'tgpo [bot]') {
-        return;
-    }
-
     // Check if user is on banned list
     // If so, boot 'em
     bot.getUserId(registereddata.user[0].name, function (userdata) { 
+        
+        //Lookup failed
         if (!userdata.userid) {
+            return;
+        }
+
+        // Ignore yourself
+        if (userdata.userid === USERID) {
             return;
         }
 
@@ -100,9 +101,9 @@ bot.on('registered', (registereddata) => {
     });
 
     // Greet incoming users
+    /*
     sleep(1000).then(() => {
-        // bot.speak(`${registereddata.user[0].name}, Welcome to ${roomName}.`);
+        bot.speak(`${registereddata.user[0].name}, Welcome to ${roomName}.`);
     });
+    */
 });
-
-const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
