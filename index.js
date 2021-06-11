@@ -3,7 +3,7 @@ const Storage = require('node-storage');
 const request = require('request');
 const store = new Storage('data');
 
-require('dotenv').config();
+require('dotenv').config({ path: './src/config/.env' });
 
 const PrivateMessage = require('./src/privatemessage.js');
 const Chat = require('./src/chat.js');
