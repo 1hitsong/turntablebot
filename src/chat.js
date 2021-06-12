@@ -3,6 +3,8 @@ const PrivateMessage = require('./privatemessage');
 const ContentFilters = require('./contentfilters');
 const Room = require('./room');
 const Spotify = require('./lib/spotify');
+const Wikipedia = require('./lib/wikipedia');
+const Youtube = require('./lib/youtube');
 
 module.exports.onNewMessage = async (bot, data) => {
 
@@ -80,19 +82,21 @@ const postNewGenre = async (bot, data) => {
 }
 
 const postYoutubeLink = async (bot, data) => {
-    let searchCriteria = encodeURIComponent(data.text.match(/^\/yt (.+)/)[1]);
+    let searchTerm = data.text.match(/^\/yt (.+)/)[1];
+    let searchCriteria = encodeURIComponent(searchTerm);
 
-    if (ContentFilters.containsBannedWords(data.text.match(/^\/yt (.+)/)[1])) {
+    if (ContentFilters.containsBannedWords(searchTerm)) {
         this.say(bot, `Grow up.`);
         return;
     }
-
-    let youtubeURL = `https://www.googleapis.com/youtube/v3/search?q=${searchCriteria}&key=${process.env.YOUTUBE_API_KEY}`
-    
-    request(youtubeURL, {json: true}, (error, res, body) => {
-        let videoId = body.items[0].id.videoId;
-        this.say(bot, `https://www.youtube.com/watch?v=${videoId}`);
-    });
+    try {
+        let youtubeURL = await Youtube.getVideoURL(searchCriteria);
+        this.say(bot, youtubeURL);
+    }
+    catch (err) {
+        this.say(bot, err);
+        return;
+    }
 }
 
 const postSimilarBands = async (bot) => {
@@ -171,20 +175,21 @@ const postSpotifyReleaseDate = async (bot) => {
 }
 
 const postWikipediaLink = async (bot, data) => {
-    if (ContentFilters.containsBannedWords(data.text.match(/^\/wiki (.+)/)[1])) {
+    let searchTerm = data.text.match(/^\/wiki (.+)/)[1];
+
+    if (ContentFilters.containsBannedWords(searchTerm)) {
         this.say(bot, `Grow up.`);
         return;
     }
 
-    let searchCriteria = encodeURIComponent(data.text.match(/^\/wiki (.+)/)[1]);
-    let wikiURL = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${searchCriteria}&format=json`
-    
-    request(wikiURL, {json: true}, (error, res, body) => {
-        if (!body.query.search[0]) {
-            return;
-        }
+    let searchCriteria = encodeURIComponent(searchTerm);
 
-        let PageID = encodeURIComponent(body.query.search[0].title);
-        this.say(bot, `http://en.wikipedia.org/wiki/${PageID}`);
-    });
+    try {
+        let wikipediaURL = await Wikipedia.getPageURL(searchCriteria);
+        this.say(bot, wikipediaURL);
+    }
+    catch (err) {
+        this.say(bot, err);
+        return;
+    }
 }
