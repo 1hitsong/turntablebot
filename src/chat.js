@@ -2,7 +2,7 @@ const request = require('request');
 const PrivateMessage = require('./privatemessage');
 const ContentFilters = require('./contentfilters');
 const Room = require('./room');
-const Spotify = require('./spotify');
+const Spotify = require('./lib/spotify');
 
 module.exports.onNewMessage = async (bot, data) => {
 
@@ -22,7 +22,7 @@ module.exports.onNewMessage = async (bot, data) => {
     }
 
     if (data.text.match(/^\/released/)) {
-        postReleaseDate(bot);
+        postSpotifyReleaseDate(bot);
     }
 
     // Generate new genres
@@ -96,163 +96,78 @@ const postYoutubeLink = async (bot, data) => {
 }
 
 const postSimilarBands = async (bot) => {
-    const spotifyAccessToken = await Spotify.getAccessToken();
-
     try {
-        var currentSong = await Room.getCurrentSong(bot);
-    }
-    catch (err) {
-        this.say(bot, err);
-        return;
-    }
-
-    const currentArtist = currentSong.metadata.artist;
-    let searchCriteria = encodeURIComponent(currentArtist);
-
-    let artistID = await Spotify.search(searchCriteria);
-
-    if (!artistID.hasOwnProperty('artists')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    if (!artistID.artists.hasOwnProperty('items')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    if (!Array.isArray(artistID.artists.items) || !artistID.artists.items.length) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    artistID = artistID.artists.items[0].id;
-
-    if (!artistID) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    try {
-        let relatedArtists = await Spotify.getRelatedArtists(artistID);
+        const spotifyAccessToken = await Spotify.getAccessToken();
+        let currentArtist = await Room.getCurrentMetaArtist(bot);
+        let searchCriteria = encodeURIComponent(currentArtist);
+        let spotifyArtistData = await Spotify.search(`artist`, searchCriteria);
+        let spotifyArtistID = await Spotify.getArtistID(spotifyArtistData);
+        let relatedArtists = await Spotify.getRelatedArtists(spotifyArtistID);
         
         let bandList = ``;
     
         relatedArtists.slice(0, 5).forEach(band => bandList += band.name + ',  ');
         bandList = bandList.slice(0, -3); 
+
         this.say(bot, `Similar bands to ${currentArtist} include ${bandList}`);
     }
     catch (err) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
+        this.say(bot, err);
         return;
     }
-
-
-
 }
 
 const postSpotifyArtistLink = async (bot) => {
-    const spotifyAccessToken = await Spotify.getAccessToken();
-
-    const roomInfo = await Room.getInfo(bot);
-    if (!roomInfo.room.metadata.current_song) {
-        this.say(bot, `Dude, nothing's playing.`);
+    try {
+        const spotifyAccessToken = await Spotify.getAccessToken();
+        let currentArtist = await Room.getCurrentMetaArtist(bot);
+        let searchCriteria = encodeURIComponent(`artist:${currentArtist}`);
+        let spotifyArtistData = await Spotify.search(`artist`, searchCriteria);
+        let spotifyLink = await Spotify.getArtistLink(spotifyArtistData);
+        this.say(bot, spotifyLink);
+    }
+    catch (err) {
+        this.say(bot, err);
         return;
     }
-
-    const currentArtist = roomInfo.room.metadata.current_song.metadata.artist;
-    let searchCriteria = encodeURIComponent(`artist:${currentArtist}`);
-
-    let artistID = await Spotify.search(searchCriteria);
-
-    if (!artistID.hasOwnProperty('artists')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    if (!artistID.artists.hasOwnProperty('items')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    if (!Array.isArray(artistID.artists.items) || !artistID.artists.items.length) {
-        this.say(bot, `Couldn't find anything for ${currentArtist}.`);
-        return;
-    }
-
-    let spotifyLink = artistID.artists.items[0].external_urls.spotify;
-    this.say(bot, spotifyLink);
 }
 
 const postSpotifySongLink = async (bot) => {
-    const spotifyAccessToken = await Spotify.getAccessToken();
+    try {
+        const spotifyAccessToken = await Spotify.getAccessToken();
+        let currentSong = await Room.getCurrentSong(bot);
 
-    const roomInfo = await Room.getInfo(bot);
-    if (!roomInfo.room.metadata.current_song) {
-        this.say(bot, `Dude, nothing's playing.`);
+        const currentMetaArtist = currentSong.metadata.artist;
+        const currentMetaSong = currentSong.metadata.song;
+        let searchCriteria = encodeURIComponent(`artist:${currentMetaArtist} track: ${currentMetaSong}`);
+        let spotifySongData = await Spotify.search(`artist,track`, searchCriteria);
+
+        let spotifyLink = await Spotify.getSongLink(spotifySongData);
+        this.say(bot, spotifyLink);
+    }
+    catch (err) {
+        this.say(bot, err);
         return;
     }
-
-    const currentArtist = roomInfo.room.metadata.current_song.metadata.artist;
-    const currentSong = roomInfo.room.metadata.current_song.metadata.song;
-    let searchCriteria = encodeURIComponent(`artist:${currentArtist} track: ${currentSong}`);
-
-    let searchResults = await Spotify.search(searchCriteria);
-
-    if (!searchResults.hasOwnProperty('tracks')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    if (!searchResults.tracks.hasOwnProperty('items')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    if (!Array.isArray(searchResults.tracks.items) || !searchResults.tracks.items.length) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    let spotifyLink = searchResults.tracks.items[0].external_urls.spotify;
-    this.say(bot, spotifyLink);
 }
 
-const postReleaseDate = async (bot) => {
-    const spotifyAccessToken = await Spotify.getAccessToken();
+const postSpotifyReleaseDate = async (bot) => {
+    try {
+        const spotifyAccessToken = await Spotify.getAccessToken();
+        let currentSong = await Room.getCurrentSong(bot);
 
-    const roomInfo = await Room.getInfo(bot);
-    if (!roomInfo.room.metadata.current_song) {
-        this.say(bot, `Dude, nothing's playing.`);
+        const currentMetaArtist = currentSong.metadata.artist;
+        const currentMetaSong = currentSong.metadata.song;
+        let searchCriteria =encodeURIComponent(`artist:${currentMetaArtist} track: ${currentMetaSong}`);
+        let spotifySongData = await Spotify.search(`artist,track`, searchCriteria);
+
+        let spotifyReleaseDate = await Spotify.getSongReleaseDate(spotifySongData);
+        this.say(bot, `This album was released on/in ${spotifyReleaseDate}`);
+    }
+    catch (err) {
+        this.say(bot, err);
         return;
     }
-
-    const currentArtist = roomInfo.room.metadata.current_song.metadata.artist;
-    const currentSong = roomInfo.room.metadata.current_song.metadata.song;
-    let searchCriteria = encodeURIComponent(`artist:${currentArtist} track: ${currentSong}`);
-
-    let searchResults = await Spotify.search(searchCriteria);
-
-    if (!searchResults.hasOwnProperty('tracks')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    if (!searchResults.tracks.hasOwnProperty('items')) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    if (!Array.isArray(searchResults.tracks.items) || !searchResults.tracks.items.length) {
-        this.say(bot, `Couldn't find anything for ${currentArtist} - ${currentSong}.`);
-        return;
-    }
-
-    if (!searchResults.tracks.items[0].album.release_date) {
-        return;
-    }
-
-    this.say(bot, `This album was released on/in ${searchResults.tracks.items[0].album.release_date}`);
 }
 
 const postWikipediaLink = async (bot, data) => {
