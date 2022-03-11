@@ -1,6 +1,6 @@
 module.exports.getInfo = (bot) => {
     return new Promise((resolve) => {
-        bot.roomInfo(true, (data) => {
+        bot.API.roomInfo(true, (data) => {
             resolve(data);
         });
     });
@@ -8,7 +8,7 @@ module.exports.getInfo = (bot) => {
 
 module.exports.getCurrentSong = (bot) => {
     return new Promise((resolve, reject) => {
-        bot.roomInfo(true, (data) => {
+        bot.API.roomInfo(true, (data) => {
 
             if (!data.room.metadata.current_song) {
                 reject(`Dude, nothing's playing.`);
@@ -22,7 +22,7 @@ module.exports.getCurrentSong = (bot) => {
 
 module.exports.getCurrentMetaArtist = (bot) => {
     return new Promise((resolve, reject) => {
-        bot.roomInfo(true, (data) => {
+        bot.API.roomInfo(true, (data) => {
 
             if (!data.room.metadata.current_song) {
                 reject(`Dude, nothing's playing.`);
@@ -36,7 +36,7 @@ module.exports.getCurrentMetaArtist = (bot) => {
 
 module.exports.getCurrentMetaSong = (bot) => {
     return new Promise((resolve, reject) => {
-        bot.roomInfo(true, (data) => {
+        bot.API.roomInfo(true, (data) => {
 
             if (!data.room.metadata.current_song) {
                 reject(`Dude, nothing's playing.`);

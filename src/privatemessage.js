@@ -1,6 +1,3 @@
-const Vote = require('./vote');
-const Song = require('./song');
-
 module.exports.onNewPM = async (bot, data) => {
 
     if (data.text.match(/^\/commands/)) {
@@ -19,28 +16,28 @@ module.exports.onNewPM = async (bot, data) => {
     }
 
     if (data.text.match(/^\/bop/)) {
-        Vote(bot, `up`);
+        bot.Vote(bot, `up`);
     }
 
     if (data.text.match(/^\/snag/)) {
         if (data.senderid === '60986c3e47c69b001ad5c5f5') {
-            Song.snag(bot);
+            bot.Song.snag(bot);
         }
     }
 
     if (data.text.match(/^\/djstart/)) {
         if (data.senderid === '60986c3e47c69b001ad5c5f5') {
-            bot.addDj();
+            bot.API.addDj();
         }
     }
 
     if (data.text.match(/^\/djstop/)) {
         if (data.senderid === '60986c3e47c69b001ad5c5f5') {
-            bot.remDj();
+            bot.API.remDj();
         }
     }
 };
 
 module.exports.send = async (bot, message, touser) => {
-    bot.pm(message, touser);
+    bot.API.pm(message, touser);
 };

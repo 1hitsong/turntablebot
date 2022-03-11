@@ -1,10 +1,7 @@
-const request = require('request');
-const PrivateMessage = require('./privatemessage');
-const ContentFilters = require('./contentfilters');
-const Room = require('./room');
 const Spotify = require('./lib/spotify');
 const Wikipedia = require('./lib/wikipedia');
 const Youtube = require('./lib/youtube');
+const Lyrics = require('./lib/lyrics');
 
 module.exports.onNewMessage = async (bot, data) => {
 
@@ -16,11 +13,6 @@ module.exports.onNewMessage = async (bot, data) => {
     // Lyrics Search
     if (data.text.match(/^\/lyrics (.+)/)) {
         pmUserLyrics(bot, data);
-    }
-
-    // Generate new genres
-    if (data.text.match(/^\/what genre is (.+)/)) {
-        postNewGenre(bot, data);
     }
 
     if (data.text.match(/^\/released/)) {
@@ -51,41 +43,61 @@ module.exports.onNewMessage = async (bot, data) => {
     if (data.text.match(/^\/wiki (.+)/)) {
         postWikipediaLink(bot, data);
     }
+
+    // Add to DJ Queue
+    if (data.text.match(/^\/1addme/)) {
+        addUserToQueue(bot, data);
+    }
+
+    // Remove from DJ Queue
+    if (data.text.match(/^\/1removeme/)) {
+        removeUserToQueue(bot, data);
+    }
 };
 
 module.exports.say = async (bot, message) => {
-    bot.speak(message);
+    bot.API.speak(message);
+}
+
+const addUserToQueue = async (bot, data) => {
+    try {
+        let addDJ = await bot.DJQueue.add(bot, data);
+        this.say(bot, addDJ);
+    }
+    catch (err) {
+        this.say(bot, err);
+        return;
+    }
+}
+
+const removeUserToQueue = async (bot, data) => {
+    try {
+        let removeDJ = await bot.DJQueue.remove(data);
+        this.say(bot, removeDJ);
+    }
+    catch (err) {
+        this.say(bot, err);
+        return;
+    }
 }
 
 const pmUserLyrics = async (bot, data) => {
     let searchCriteria = data.text.match(/^\/lyrics (.+)/)[1];
-    let songData = searchCriteria.split(` - `);
-    let URL = `https://api.lyrics.ovh/v1/${songData[0]}/${songData[1]}`
-    
-    request(URL, {json: true}, (error, res, body) => {
-        if (!body.hasOwnProperty(`lyrics`)) {
-            PrivateMessage.send(bot, `I couldn't find lyrics for ${searchCriteria}.`, data.userid);
-            return;
-        }
-
-        PrivateMessage.send(bot, body.lyrics, data.userid);
-    });
-}
-
-const postNewGenre = async (bot, data) => {
-    let searchCriteria = data.text.match(/^\/what genre is (.+)/)[1];
-    let URL = `https://binaryjazz.us/wp-json/genrenator/v1/genre/`
-    
-    request(URL, {json: true}, (error, res, body) => {
-        this.say(bot, `${searchCriteria} is ${body}.`);
-    });
+    try {
+        let lyrics = await Lyrics.getLyrics(searchCriteria);
+        bot.PrivateMessage.send(bot, lyrics, data.userid);
+    }
+    catch (err) {
+        bot.PrivateMessage.send(bot, err, data.userid);
+        return;
+    }
 }
 
 const postYoutubeLink = async (bot, data) => {
     let searchTerm = data.text.match(/^\/yt (.+)/)[1];
     let searchCriteria = encodeURIComponent(searchTerm);
 
-    if (ContentFilters.containsBannedWords(searchTerm)) {
+    if (bot.ContentFilters.containsBannedWords(searchTerm)) {
         this.say(bot, `Grow up.`);
         return;
     }
@@ -102,7 +114,7 @@ const postYoutubeLink = async (bot, data) => {
 const postSimilarBands = async (bot) => {
     try {
         const spotifyAccessToken = await Spotify.getAccessToken();
-        let currentArtist = await Room.getCurrentMetaArtist(bot);
+        let currentArtist = await bot.Room.getCurrentMetaArtist(bot);
         let searchCriteria = encodeURIComponent(currentArtist);
         let spotifyArtistData = await Spotify.search(`artist`, searchCriteria);
         let spotifyArtistID = await Spotify.getArtistID(spotifyArtistData);
@@ -124,7 +136,7 @@ const postSimilarBands = async (bot) => {
 const postSpotifyArtistLink = async (bot) => {
     try {
         const spotifyAccessToken = await Spotify.getAccessToken();
-        let currentArtist = await Room.getCurrentMetaArtist(bot);
+        let currentArtist = await bot.Room.getCurrentMetaArtist(bot);
         let searchCriteria = encodeURIComponent(`artist:${currentArtist}`);
         let spotifyArtistData = await Spotify.search(`artist`, searchCriteria);
         let spotifyLink = await Spotify.getArtistLink(spotifyArtistData);
@@ -139,7 +151,7 @@ const postSpotifyArtistLink = async (bot) => {
 const postSpotifySongLink = async (bot) => {
     try {
         const spotifyAccessToken = await Spotify.getAccessToken();
-        let currentSong = await Room.getCurrentSong(bot);
+        let currentSong = await bot.Room.getCurrentSong(bot);
 
         const currentMetaArtist = currentSong.metadata.artist;
         const currentMetaSong = currentSong.metadata.song;
@@ -158,7 +170,7 @@ const postSpotifySongLink = async (bot) => {
 const postSpotifyReleaseDate = async (bot) => {
     try {
         const spotifyAccessToken = await Spotify.getAccessToken();
-        let currentSong = await Room.getCurrentSong(bot);
+        let currentSong = await bot.Room.getCurrentSong(bot);
 
         const currentMetaArtist = currentSong.metadata.artist;
         const currentMetaSong = currentSong.metadata.song;
@@ -177,7 +189,7 @@ const postSpotifyReleaseDate = async (bot) => {
 const postWikipediaLink = async (bot, data) => {
     let searchTerm = data.text.match(/^\/wiki (.+)/)[1];
 
-    if (ContentFilters.containsBannedWords(searchTerm)) {
+    if (bot.ContentFilters.containsBannedWords(searchTerm)) {
         this.say(bot, `Grow up.`);
         return;
     }
