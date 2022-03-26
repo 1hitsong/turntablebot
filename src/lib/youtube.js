@@ -31,3 +31,25 @@ module.exports.getVideoURL = (searchCriteria) => {
         });
     });
 }
+
+module.exports.checkVideoStatus = (videoIDs) => {
+    return new Promise( (resolve, reject) => {
+        let youtubeURL = `https://www.googleapis.com/youtube/v3/videos?id=${videoIDs}&part=status&key=${process.env.YOUTUBE_API_KEY}`
+        request(youtubeURL, {json: true}, (error, res, body) => {
+
+            if (error) {
+                reject(`Something went wrong. Try again later.`);
+            }
+
+            if (!body.hasOwnProperty('items')) {
+                reject(`No data returned`);
+            }
+
+            if (!Array.isArray(body.items) || !body.items.length) {
+                reject(`No data returned`);
+            }
+
+            resolve(body.items);
+        });
+    });
+}

@@ -1,15 +1,20 @@
 const ttapi = require('ttapi');
 const Storage = require('node-storage');
 const store = new Storage('data');
+const cors = require('cors');
 const express = require('express')
 const app = express();
 const pug = require('pug');
 
 require('dotenv').config({ path: './src/config/.env' });
 
+app.use(`/styles`, express.static('./src/styles'));
 app.use(`/scripts`, express.static('./src/scripts'));
 app.use(`/modules`, express.static('./node_modules'));
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3000'
+}));
 
 const bot = {
     API: new ttapi(process.env.BOT_AUTH, process.env.BOT_USERID),
@@ -212,9 +217,20 @@ bot.API.on('registered', (registereddata) => {
 
 app.get('/', function (req, res) {
     bot.API.playlistAll( (playlistData) => {
-        // console.table(playlistData.list);
         let html = pug.renderFile('./src/templates/index.pug', {playlistData: playlistData.list});
         res.send(html);
+    });
+});
+
+app.post('/songstatus', async function (req, res) {
+    const Youtube = require('./src/lib/youtube');
+    let videoStatus = await Youtube.checkVideoStatus(req.body.videoIDs)
+    res.send(videoStatus);
+});
+
+app.get('/queue.json', function (req, res) {
+    bot.API.playlistAll( (playlistData) => {
+        res.json(playlistData);
     });
 });
 
@@ -240,5 +256,4 @@ app.get('/deletesong', (req, res) => {
     res.json(`refresh`);
 });
 
-bot.API.listen(8486);
-app.listen(8485)
+app.listen(8585)
